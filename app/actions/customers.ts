@@ -1,0 +1,173 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { canManageCustomers } from "@/lib/auth";
+import { isCustomerLanguage, isCustomerStatus } from "@/lib/customer-options";
+import { getCurrentSession } from "@/lib/session";
+import { createSupabaseAdminClient } from "@/lib/supabase";
+
+export type CustomerActionState = {
+  error?: string;
+  success?: string;
+};
+
+function readText(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value.trim() : "";
+}
+
+async function requireAdmin() {
+  const session = await getCurrentSession();
+
+  if (!session) {
+    redirect("/login/agent");
+  }
+
+  if (!canManageCustomers(session.role)) {
+    redirect("/dashboard");
+  }
+
+  return session;
+}
+
+function readCustomerFields(formData: FormData) {
+  const phone = readText(formData, "phone");
+  const internalName = readText(formData, "internal_name");
+  const preferredLanguage = readText(formData, "preferred_language");
+  const status = readText(formData, "status");
+
+  if (!phone) {
+    throw new Error("Phone is required.");
+  }
+
+  if (!internalName) {
+    throw new Error("Internal name is required.");
+  }
+
+  if (!isCustomerLanguage(preferredLanguage)) {
+    throw new Error("Preferred language is invalid.");
+  }
+
+  if (!isCustomerStatus(status)) {
+    throw new Error("Status is invalid.");
+  }
+
+  return {
+    phone,
+    internalName,
+    preferredLanguage,
+    status
+  };
+}
+
+export async function createCustomerAction(
+  _previousState: CustomerActionState,
+  formData: FormData
+): Promise<CustomerActionState> {
+  await requireAdmin();
+
+  try {
+    const password = readText(formData, "password");
+    const { phone, internalName, preferredLanguage, status } =
+      readCustomerFields(formData);
+
+    if (password.length < 8) {
+      throw new Error("Password must be at least 8 characters.");
+    }
+
+    const supabase = createSupabaseAdminClient();
+    const { error } = await supabase.rpc("create_customer_admin", {
+      input_phone: phone,
+      input_password: password,
+      input_internal_name: internalName,
+      input_preferred_language: preferredLanguage,
+      input_status: status
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/admin/customers");
+    return { success: "Customer created." };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Customer creation failed."
+    };
+  }
+}
+
+export async function updateCustomerAction(
+  _previousState: CustomerActionState,
+  formData: FormData
+): Promise<CustomerActionState> {
+  await requireAdmin();
+
+  try {
+    const customerId = readText(formData, "customer_id");
+    const { phone, internalName, preferredLanguage, status } =
+      readCustomerFields(formData);
+
+    if (!customerId) {
+      throw new Error("Customer ID is required.");
+    }
+
+    const supabase = createSupabaseAdminClient();
+    const { error } = await supabase.rpc("update_customer_admin", {
+      input_customer_id: customerId,
+      input_phone: phone,
+      input_internal_name: internalName,
+      input_preferred_language: preferredLanguage,
+      input_status: status
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/admin/customers");
+    return { success: "Customer updated." };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Customer update failed."
+    };
+  }
+}
+
+export async function resetCustomerPasswordAction(
+  _previousState: CustomerActionState,
+  formData: FormData
+): Promise<CustomerActionState> {
+  await requireAdmin();
+
+  try {
+    const customerId = readText(formData, "customer_id");
+    const password = readText(formData, "password");
+
+    if (!customerId) {
+      throw new Error("Customer ID is required.");
+    }
+
+    if (password.length < 8) {
+      throw new Error("Password must be at least 8 characters.");
+    }
+
+    const supabase = createSupabaseAdminClient();
+    const { error } = await supabase.rpc("reset_customer_password_admin", {
+      input_customer_id: customerId,
+      input_password: password
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    revalidatePath("/admin/customers");
+    return { success: "Password reset." };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Password reset failed."
+    };
+  }
+}

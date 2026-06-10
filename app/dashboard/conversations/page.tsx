@@ -1,0 +1,227 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import {
+  createInternalNoteAction,
+  sendAgentMessageAction
+} from "@/app/actions/conversations";
+import {
+  ConversationSearchInput,
+  ConversationSearchProvider
+} from "@/components/ConversationSearch";
+import { ConversationSidebarList } from "@/components/ConversationSidebarList";
+import { CustomerNotesForm } from "@/components/CustomerNotesForm";
+import { CustomerNotesList } from "@/components/CustomerNotesList";
+import { AddCustomerTagForm, TagBadgeList } from "@/components/CustomerTags";
+import { ConversationThread } from "@/components/ConversationThread";
+import {
+  getConversationSummary,
+  listCustomerNotes,
+  listConversationMessages,
+  listInternalNotes,
+  listStaffConversations,
+  markCustomerMessagesReadForStaff
+} from "@/lib/conversations";
+import { getCurrentSession } from "@/lib/session";
+import { listActiveQuickReplies } from "@/lib/quick-replies";
+import { getSupabasePublicConfig } from "@/lib/supabase";
+import { listCustomerTags } from "@/lib/tags";
+import type { ConversationSummary, CustomerNote, CustomerTag } from "@/lib/types";
+
+type ConversationsPageProps = {
+  searchParams?: {
+    conversationId?: string;
+  };
+};
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return "No activity yet";
+  }
+
+  return new Date(value).toLocaleString();
+}
+
+function CustomerProfileCard({
+  conversation,
+  tags
+}: {
+  conversation: ConversationSummary;
+  tags: CustomerTag[];
+}) {
+  return (
+    <section className="profile-card">
+      <header className="profile-card-header">
+        <span>Customer</span>
+        <h2>{conversation.customer.internal_name}</h2>
+        <p>{conversation.customer.phone}</p>
+      </header>
+
+      <dl className="profile-detail-list">
+        <div>
+          <dt>Internal name</dt>
+          <dd>{conversation.customer.internal_name}</dd>
+        </div>
+        <div>
+          <dt>Phone</dt>
+          <dd>{conversation.customer.phone}</dd>
+        </div>
+        <div>
+          <dt>Preferred language</dt>
+          <dd>{conversation.customer.preferred_language}</dd>
+        </div>
+        <div>
+          <dt>Status</dt>
+          <dd>
+            <span className={`status-pill ${conversation.customer.status}`}>
+              {conversation.customer.status}
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt>Created at</dt>
+          <dd>{formatDateTime(conversation.customer.created_at)}</dd>
+        </div>
+        <div>
+          <dt>Last activity</dt>
+          <dd>{formatDateTime(conversation.last_message_at)}</dd>
+        </div>
+      </dl>
+
+      <section className="profile-tags-section">
+        <div className="profile-tags-header">
+          <h3>Tags</h3>
+          <span>{tags.length}</span>
+        </div>
+        <TagBadgeList tags={tags} />
+        <AddCustomerTagForm customerId={conversation.customer_id} compact />
+      </section>
+    </section>
+  );
+}
+
+function CustomerNotesCard({
+  customerId,
+  notes
+}: {
+  customerId: string;
+  notes: CustomerNote[];
+}) {
+  return (
+    <section className="customer-notes-card">
+      <header className="notes-card-header">
+        <h2>Customer Notes</h2>
+        <span>{notes.length}</span>
+      </header>
+
+      <CustomerNotesForm customerId={customerId} />
+
+      <CustomerNotesList notes={notes} />
+    </section>
+  );
+}
+
+export default async function StaffConversationsPage({
+  searchParams
+}: ConversationsPageProps) {
+  const session = await getCurrentSession();
+
+  if (!session) {
+    redirect("/login/agent");
+  }
+
+  if (session.role !== "agent" && session.role !== "admin") {
+    redirect("/dashboard");
+  }
+
+  let conversations = await listStaffConversations();
+  const selectedConversationId =
+    searchParams?.conversationId ?? conversations[0]?.id ?? null;
+  if (selectedConversationId) {
+    await markCustomerMessagesReadForStaff(selectedConversationId);
+    conversations = await listStaffConversations();
+  }
+  const selectedConversation = selectedConversationId
+    ? await getConversationSummary(selectedConversationId)
+    : null;
+  const messages = selectedConversationId
+    ? await listConversationMessages(selectedConversationId)
+    : [];
+  const internalNotes = selectedConversationId
+    ? await listInternalNotes(selectedConversationId)
+    : [];
+  const customerNotes = selectedConversation
+    ? await listCustomerNotes(selectedConversation.customer_id)
+    : [];
+  const customerTags = selectedConversation
+    ? await listCustomerTags(selectedConversation.customer_id)
+    : [];
+  const quickReplies =
+    session.role === "agent" || session.role === "admin"
+      ? await listActiveQuickReplies()
+      : [];
+  const { supabaseUrl, anonKey } = getSupabasePublicConfig();
+
+  return (
+    <main className="staff-chat-shell">
+      <aside className="conversation-sidebar">
+        <div className="sidebar-header">
+          <h1 className="title">Conversations</h1>
+          <Link href="/dashboard">Dashboard</Link>
+        </div>
+
+        {conversations.length === 0 ? (
+          <p className="empty-state">No conversations yet.</p>
+        ) : (
+          <ConversationSidebarList
+            conversations={conversations}
+            selectedConversationId={selectedConversationId}
+          />
+        )}
+      </aside>
+
+      <ConversationSearchProvider>
+        <section className="staff-conversation-panel">
+          {selectedConversation && selectedConversationId ? (
+            <>
+              <header className="chat-header compact">
+                <div>
+                  <h2>{selectedConversation.customer.internal_name}</h2>
+                  <p>{selectedConversation.customer.phone}</p>
+                </div>
+                <ConversationSearchInput />
+              </header>
+              <ConversationThread
+                conversationId={selectedConversationId}
+                initialMessages={messages}
+                initialInternalNotes={internalNotes}
+                currentUserRole={session.role}
+                currentUserId={session.id}
+                supabaseUrl={supabaseUrl}
+                supabaseAnonKey={anonKey}
+                enableEnterToSend
+                quickReplies={quickReplies}
+                action={sendAgentMessageAction}
+                internalNoteAction={createInternalNoteAction}
+              />
+            </>
+          ) : (
+            <p className="empty-state">Select a conversation to start replying.</p>
+          )}
+        </section>
+
+        {selectedConversation ? (
+          <aside className="customer-profile-panel">
+            <CustomerProfileCard
+              conversation={selectedConversation}
+              tags={customerTags}
+            />
+            <CustomerNotesCard
+              customerId={selectedConversation.customer_id}
+              notes={customerNotes}
+            />
+          </aside>
+        ) : null}
+      </ConversationSearchProvider>
+    </main>
+  );
+}
