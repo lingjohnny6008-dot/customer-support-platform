@@ -22,6 +22,21 @@ export async function authenticateCustomer(formData: FormData) {
   }
 
   const supabase = createSupabaseAdminClient();
+  const { data: customerStatus, error: statusError } = await supabase
+    .from("customers")
+    .select("status")
+    .eq("phone", phone)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (statusError) {
+    throw new Error(statusError.message);
+  }
+
+  if (customerStatus?.status === "blocked") {
+    throw new Error("Account is blocked.");
+  }
+
   const { data, error } = await supabase.rpc("verify_customer_login", {
     input_phone: phone,
     input_password: password

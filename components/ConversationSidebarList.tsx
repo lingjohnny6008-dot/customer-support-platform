@@ -71,6 +71,9 @@ export function ConversationSidebarList({
                   ) : null}
                 </strong>
                 <span>{conversation.customer.phone}</span>
+                <small>
+                  Assigned: {conversation.assigned_agent?.full_name ?? "Unassigned"}
+                </small>
                 <span className={`presence-label ${online ? "online" : "offline"}`}>
                   {online ? "Online" : "Offline"}
                 </span>

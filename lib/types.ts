@@ -23,6 +23,10 @@ export type ManagedCustomer = {
   updated_at: string;
   phone: string;
   internal_name: string;
+  full_name: string | null;
+  email: string | null;
+  country: string | null;
+  note_summary: string | null;
   preferred_language: CustomerLanguage;
   status: CustomerStatus;
 };
@@ -60,6 +64,16 @@ export type ChatMessage = {
   type: "text" | "file" | "system";
   body: string | null;
   created_at: string;
+  read_at: string | null;
+  attachments?: ChatAttachment[];
+};
+
+export type ChatAttachment = {
+  id: string;
+  message_id: string;
+  file_url: string;
+  file_type: string;
+  file_size: number;
 };
 
 export type ConversationSummary = {
@@ -71,9 +85,18 @@ export type ConversationSummary = {
   last_message_at: string | null;
   created_at: string;
   unread_customer_count: number;
+  assigned_agent: {
+    id: string;
+    full_name: string;
+    email: string;
+  } | null;
   customer: {
     phone: string;
     internal_name: string;
+    full_name: string | null;
+    email: string | null;
+    country: string | null;
+    note_summary: string | null;
     preferred_language: CustomerLanguage;
     status: CustomerStatus;
     created_at: string | null;

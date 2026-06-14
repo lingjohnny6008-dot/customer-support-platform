@@ -34,6 +34,10 @@ async function requireAdmin() {
 function readCustomerFields(formData: FormData) {
   const phone = readText(formData, "phone");
   const internalName = readText(formData, "internal_name");
+  const fullName = readText(formData, "full_name");
+  const email = readText(formData, "email");
+  const country = readText(formData, "country");
+  const noteSummary = readText(formData, "note_summary");
   const preferredLanguage = readText(formData, "preferred_language");
   const status = readText(formData, "status");
 
@@ -56,6 +60,10 @@ function readCustomerFields(formData: FormData) {
   return {
     phone,
     internalName,
+    fullName,
+    email,
+    country,
+    noteSummary,
     preferredLanguage,
     status
   };
@@ -69,8 +77,16 @@ export async function createCustomerAction(
 
   try {
     const password = readText(formData, "password");
-    const { phone, internalName, preferredLanguage, status } =
-      readCustomerFields(formData);
+    const {
+      phone,
+      internalName,
+      fullName,
+      email,
+      country,
+      noteSummary,
+      preferredLanguage,
+      status
+    } = readCustomerFields(formData);
 
     if (password.length < 8) {
       throw new Error("Password must be at least 8 characters.");
@@ -82,7 +98,11 @@ export async function createCustomerAction(
       input_password: password,
       input_internal_name: internalName,
       input_preferred_language: preferredLanguage,
-      input_status: status
+      input_status: status,
+      input_full_name: fullName,
+      input_email: email,
+      input_country: country,
+      input_note_summary: noteSummary
     });
 
     if (error) {
@@ -106,8 +126,16 @@ export async function updateCustomerAction(
 
   try {
     const customerId = readText(formData, "customer_id");
-    const { phone, internalName, preferredLanguage, status } =
-      readCustomerFields(formData);
+    const {
+      phone,
+      internalName,
+      fullName,
+      email,
+      country,
+      noteSummary,
+      preferredLanguage,
+      status
+    } = readCustomerFields(formData);
 
     if (!customerId) {
       throw new Error("Customer ID is required.");
@@ -119,7 +147,11 @@ export async function updateCustomerAction(
       input_phone: phone,
       input_internal_name: internalName,
       input_preferred_language: preferredLanguage,
-      input_status: status
+      input_status: status,
+      input_full_name: fullName,
+      input_email: email,
+      input_country: country,
+      input_note_summary: noteSummary
     });
 
     if (error) {

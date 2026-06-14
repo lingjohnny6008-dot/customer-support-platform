@@ -33,3 +33,20 @@ export async function listAgents(search: string) {
 
   return (data ?? []) as ManagedAgent[];
 }
+
+export async function listAssignableAgents() {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("agents")
+    .select("id, created_at, updated_at, username, full_name, email, role, is_active")
+    .is("deleted_at", null)
+    .eq("is_active", true)
+    .in("role", ["agent", "admin"])
+    .order("full_name", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as ManagedAgent[];
+}

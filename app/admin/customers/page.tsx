@@ -85,8 +85,12 @@ export default async function AdminCustomersPage({
           <div className="customer-table-head">
             <span>Phone</span>
             <span>Internal name</span>
+            <span>Full name</span>
+            <span>Email</span>
+            <span>Country</span>
             <span>Language</span>
             <span>Status</span>
+            <span>Summary</span>
             <span>Action</span>
           </div>
 

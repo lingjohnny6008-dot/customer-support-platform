@@ -58,6 +58,18 @@ export function CreateCustomerForm() {
         <input name="internal_name" type="text" required />
       </label>
       <label className="field">
+        <span>Full name</span>
+        <input name="full_name" type="text" />
+      </label>
+      <label className="field">
+        <span>Email</span>
+        <input name="email" type="email" />
+      </label>
+      <label className="field">
+        <span>Country</span>
+        <input name="country" type="text" />
+      </label>
+      <label className="field">
         <span>Preferred language</span>
         <select name="preferred_language" defaultValue="zh">
           {customerLanguages.map((language) => (
@@ -76,6 +88,10 @@ export function CreateCustomerForm() {
             </option>
           ))}
         </select>
+      </label>
+      <label className="field customer-note-summary-field">
+        <span>Note summary</span>
+        <textarea name="note_summary" rows={2} />
       </label>
       <SubmitButton label="Create customer" />
       <ActionMessage state={state} />
@@ -98,6 +114,25 @@ export function EditCustomerForm({ customer }: { customer: ManagedCustomer }) {
         name="internal_name"
         defaultValue={customer.internal_name}
       />
+      <input
+        aria-label="Full name"
+        name="full_name"
+        defaultValue={customer.full_name ?? ""}
+        placeholder="Full name"
+      />
+      <input
+        aria-label="Email"
+        name="email"
+        type="email"
+        defaultValue={customer.email ?? ""}
+        placeholder="Email"
+      />
+      <input
+        aria-label="Country"
+        name="country"
+        defaultValue={customer.country ?? ""}
+        placeholder="Country"
+      />
       <select
         aria-label="Preferred language"
         name="preferred_language"
@@ -116,6 +151,13 @@ export function EditCustomerForm({ customer }: { customer: ManagedCustomer }) {
           </option>
         ))}
       </select>
+      <textarea
+        aria-label="Note summary"
+        name="note_summary"
+        defaultValue={customer.note_summary ?? ""}
+        placeholder="Note summary"
+        rows={2}
+      />
       <SubmitButton label="Update" />
       <ActionMessage state={state} />
     </form>

@@ -7,7 +7,7 @@ export async function listCustomers(search: string) {
 
   let query = supabase
     .from("customers")
-    .select("id, created_at, updated_at, phone, internal_name, preferred_language, status")
+    .select("id, created_at, updated_at, phone, internal_name, full_name, email, country, note_summary, preferred_language, status")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -15,7 +15,7 @@ export async function listCustomers(search: string) {
   if (normalizedSearch) {
     const escaped = normalizedSearch.replaceAll("%", "\\%").replaceAll("_", "\\_");
     query = query.or(
-      `phone.ilike.%${escaped}%,internal_name.ilike.%${escaped}%`
+      `phone.ilike.%${escaped}%,internal_name.ilike.%${escaped}%,full_name.ilike.%${escaped}%,email.ilike.%${escaped}%,country.ilike.%${escaped}%`
     );
   }
 

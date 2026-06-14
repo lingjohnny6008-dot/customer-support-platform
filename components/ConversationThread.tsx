@@ -110,6 +110,17 @@ function senderLabel(senderType: MessageSenderType) {
   return "System";
 }
 
+function shouldShowReadReceipt(
+  message: ChatMessage,
+  currentUserRole: ConversationThreadProps["currentUserRole"]
+) {
+  return currentUserRole !== "customer" && message.sender_type === "customer";
+}
+
+function getImageUrl(message: ChatMessage) {
+  return message.attachments?.[0]?.file_url ?? message.body;
+}
+
 export function ConversationThread({
   conversationId,
   initialMessages,
@@ -187,7 +198,7 @@ export function ConversationThread({
         (payload) => {
           const message = payload.new as ChatMessage;
 
-          if (message.type !== "text") {
+          if (message.type !== "text" && message.type !== "file") {
             return;
           }
 
@@ -356,9 +367,28 @@ export function ConversationThread({
                 key={message.id}
               >
                 <span>{senderLabel(message.sender_type)}</span>
-                <p>
-                  <HighlightText text={message.body} />
-                </p>
+                {message.type === "file" ? (
+                  <a
+                    className="message-image-link"
+                    href={getImageUrl(message) ?? "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <img
+                      alt="Chat attachment"
+                      src={getImageUrl(message) ?? ""}
+                    />
+                  </a>
+                ) : (
+                  <p>
+                    <HighlightText text={message.body} />
+                  </p>
+                )}
+                {shouldShowReadReceipt(message, currentUserRole) ? (
+                  <small className="message-read-receipt">
+                    {message.read_at ? "Read" : "Unread"}
+                  </small>
+                ) : null}
               </article>
             );
           })
@@ -416,7 +446,12 @@ export function ConversationThread({
             maxLength={4000}
             onChange={handleMessageInputChange}
             onKeyDown={handleTextareaKeyDown}
-            required
+          />
+          <input
+            className="message-image-input"
+            name="image"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
           />
         </div>
         <SubmitButton />

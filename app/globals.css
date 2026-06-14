@@ -213,13 +213,15 @@ select {
 }
 
 .admin-form {
-  grid-template-columns: repeat(5, minmax(140px, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
   align-items: end;
 }
 
 .search-form input,
 .customer-row-form input,
 .customer-row-form select,
+.customer-row-form textarea,
+.admin-form textarea,
 .reset-form input {
   min-height: 40px;
   border: 1px solid var(--line);
@@ -227,6 +229,18 @@ select {
   padding: 8px 10px;
   background: #ffffff;
   min-width: 0;
+}
+
+.admin-form .button,
+.admin-form .error,
+.admin-form .success,
+.customer-note-summary-field {
+  grid-column: 1 / -1;
+}
+
+.admin-form textarea,
+.customer-row-form textarea {
+  resize: vertical;
 }
 
 .customer-table {
@@ -237,7 +251,7 @@ select {
 .customer-table-head,
 .customer-row-form {
   display: grid;
-  grid-template-columns: 1.1fr 1.3fr 0.8fr 0.9fr auto;
+  grid-template-columns: repeat(8, minmax(120px, 1fr)) auto;
   gap: 10px;
   align-items: center;
 }
@@ -538,6 +552,30 @@ select {
   line-height: 1.45;
 }
 
+.message-read-receipt {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.message-image-link {
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.message-image-link img {
+  display: block;
+  width: min(320px, 100%);
+  max-height: 320px;
+  object-fit: contain;
+  background: #f1f3f5;
+}
+
 .message-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -554,6 +592,13 @@ select {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 10px 12px;
+}
+
+.message-image-input {
+  width: 100%;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .staff-chat-shell {
@@ -1048,6 +1093,43 @@ select {
   gap: 12px;
   padding: 16px 22px 20px;
   border-top: 1px solid #e3e8e5;
+}
+
+.profile-assignment-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px 22px 20px;
+  border-top: 1px solid #e3e8e5;
+}
+
+.profile-assignment-section h3 {
+  margin: 0;
+  color: #17231f;
+  font-size: 15px;
+}
+
+.assignment-form {
+  display: grid;
+  gap: 8px;
+}
+
+.assignment-form select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #d7dfda;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px 10px;
+}
+
+.assignment-submit-button {
+  min-height: 38px;
+  border-radius: 8px;
+  background: #128c7e;
+}
+
+.assignment-submit-button:hover {
+  background: #0c7468;
 }
 
 .profile-tags-header {

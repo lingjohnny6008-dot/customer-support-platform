@@ -13,6 +13,7 @@ import { CustomerNotesForm } from "@/components/CustomerNotesForm";
 import { CustomerNotesList } from "@/components/CustomerNotesList";
 import { AddCustomerTagForm, TagBadgeList } from "@/components/CustomerTags";
 import { ConversationThread } from "@/components/ConversationThread";
+import { ConversationAssignmentForm } from "@/components/ConversationAssignmentForm";
 import {
   getConversationSummary,
   listCustomerNotes,
@@ -25,7 +26,13 @@ import { getCurrentSession } from "@/lib/session";
 import { listActiveQuickReplies } from "@/lib/quick-replies";
 import { getSupabasePublicConfig } from "@/lib/supabase";
 import { listCustomerTags } from "@/lib/tags";
-import type { ConversationSummary, CustomerNote, CustomerTag } from "@/lib/types";
+import { listAssignableAgents } from "@/lib/agents";
+import type {
+  ConversationSummary,
+  CustomerNote,
+  CustomerTag,
+  ManagedAgent
+} from "@/lib/types";
 
 type ConversationsPageProps = {
   searchParams?: {
@@ -43,10 +50,12 @@ function formatDateTime(value: string | null) {
 
 function CustomerProfileCard({
   conversation,
-  tags
+  tags,
+  assignableAgents
 }: {
   conversation: ConversationSummary;
   tags: CustomerTag[];
+  assignableAgents: ManagedAgent[];
 }) {
   return (
     <section className="profile-card">
@@ -66,6 +75,18 @@ function CustomerProfileCard({
           <dd>{conversation.customer.phone}</dd>
         </div>
         <div>
+          <dt>Full name</dt>
+          <dd>{conversation.customer.full_name ?? "Not set"}</dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd>{conversation.customer.email ?? "Not set"}</dd>
+        </div>
+        <div>
+          <dt>Country</dt>
+          <dd>{conversation.customer.country ?? "Not set"}</dd>
+        </div>
+        <div>
           <dt>Preferred language</dt>
           <dd>{conversation.customer.preferred_language}</dd>
         </div>
@@ -76,6 +97,10 @@ function CustomerProfileCard({
               {conversation.customer.status}
             </span>
           </dd>
+        </div>
+        <div>
+          <dt>Assigned Agent</dt>
+          <dd>{conversation.assigned_agent?.full_name ?? "Unassigned"}</dd>
         </div>
         <div>
           <dt>Created at</dt>
@@ -89,7 +114,20 @@ function CustomerProfileCard({
           <dt>Last Seen</dt>
           <dd>{formatDateTime(conversation.customer.last_seen_at)}</dd>
         </div>
+        <div>
+          <dt>Note summary</dt>
+          <dd>{conversation.customer.note_summary ?? "Not set"}</dd>
+        </div>
       </dl>
+
+      <section className="profile-assignment-section">
+        <h3>Assign Conversation</h3>
+        <ConversationAssignmentForm
+          conversationId={conversation.id}
+          assignedAgentId={conversation.assigned_agent_id}
+          agents={assignableAgents}
+        />
+      </section>
 
       <section className="profile-tags-section">
         <div className="profile-tags-header">
@@ -163,6 +201,7 @@ export default async function StaffConversationsPage({
     session.role === "agent" || session.role === "admin"
       ? await listActiveQuickReplies()
       : [];
+  const assignableAgents = await listAssignableAgents();
   const { supabaseUrl, anonKey } = getSupabasePublicConfig();
 
   return (
@@ -214,6 +253,7 @@ export default async function StaffConversationsPage({
             <CustomerProfileCard
               conversation={selectedConversation}
               tags={customerTags}
+              assignableAgents={assignableAgents}
             />
             <CustomerNotesCard
               customerId={selectedConversation.customer_id}

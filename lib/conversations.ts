@@ -11,10 +11,20 @@ import type {
 type ConversationCustomerRow = {
   phone: string;
   internal_name: string;
+  full_name: string | null;
+  email: string | null;
+  country: string | null;
+  note_summary: string | null;
   preferred_language: CustomerLanguage;
   status: CustomerStatus;
   created_at: string | null;
   last_seen_at: string | null;
+};
+
+type ConversationAgentRow = {
+  id: string;
+  full_name: string;
+  email: string;
 };
 
 type ConversationRow = {
@@ -27,6 +37,7 @@ type ConversationRow = {
   created_at: string;
   unread_customer_count?: number;
   customers: ConversationCustomerRow | ConversationCustomerRow[] | null;
+  assigned_agent: ConversationAgentRow | ConversationAgentRow[] | null;
 };
 
 type CustomerNoteRow = {
@@ -69,6 +80,9 @@ function mapConversation(row: ConversationRow): ConversationSummary {
   const customer = Array.isArray(row.customers)
     ? row.customers[0]
     : row.customers;
+  const assignedAgent = Array.isArray(row.assigned_agent)
+    ? row.assigned_agent[0]
+    : row.assigned_agent;
 
   return {
     id: row.id,
@@ -79,9 +93,20 @@ function mapConversation(row: ConversationRow): ConversationSummary {
     last_message_at: row.last_message_at,
     created_at: row.created_at,
     unread_customer_count: row.unread_customer_count ?? 0,
+    assigned_agent: assignedAgent
+      ? {
+          id: assignedAgent.id,
+          full_name: assignedAgent.full_name,
+          email: assignedAgent.email
+        }
+      : null,
     customer: {
       phone: customer?.phone ?? "",
       internal_name: customer?.internal_name ?? "",
+      full_name: customer?.full_name ?? null,
+      email: customer?.email ?? null,
+      country: customer?.country ?? null,
+      note_summary: customer?.note_summary ?? null,
       preferred_language: customer?.preferred_language ?? "zh",
       status: customer?.status ?? "active",
       created_at: customer?.created_at ?? null,
@@ -177,6 +202,22 @@ export async function updateCustomerLastSeen(customerId: string) {
   }
 }
 
+export async function getCustomerStatus(customerId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("customers")
+    .select("status")
+    .eq("id", customerId)
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data?.status as CustomerStatus | undefined;
+}
+
 export async function getConversationForCustomer(
   conversationId: string,
   customerId: string
@@ -213,15 +254,48 @@ export async function getConversationForStaff(conversationId: string) {
   return data;
 }
 
+export async function assignConversationToAgent(
+  conversationId: string,
+  agentId: string
+) {
+  const supabase = createSupabaseAdminClient();
+  const { data: agent, error: agentError } = await supabase
+    .from("agents")
+    .select("id")
+    .eq("id", agentId)
+    .eq("is_active", true)
+    .in("role", ["agent", "admin"])
+    .is("deleted_at", null)
+    .maybeSingle();
+
+  if (agentError) {
+    throw new Error(agentError.message);
+  }
+
+  if (!agent) {
+    throw new Error("Assigned agent is invalid.");
+  }
+
+  const { error } = await supabase
+    .from("conversations")
+    .update({ assigned_agent_id: agentId })
+    .eq("id", conversationId)
+    .is("deleted_at", null);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function listConversationMessages(conversationId: string) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("messages")
     .select(
-      "id, conversation_id, customer_id, agent_id, sender_type, type, body, created_at"
+      "id, conversation_id, customer_id, agent_id, sender_type, type, body, created_at, read_at, attachments(id, message_id, file_url, file_type, file_size)"
     )
     .eq("conversation_id", conversationId)
-    .eq("type", "text")
+    .in("type", ["text", "file"])
     .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .limit(200);
@@ -240,7 +314,7 @@ async function countUnreadCustomerMessages(conversationId: string) {
     .select("id", { count: "exact", head: true })
     .eq("conversation_id", conversationId)
     .eq("sender_type", "customer")
-    .eq("type", "text")
+    .in("type", ["text", "file"])
     .is("read_at", null)
     .is("deleted_at", null);
 
@@ -269,7 +343,7 @@ export async function listStaffConversations() {
   const { data, error } = await supabase
     .from("conversations")
     .select(
-      "id, customer_id, assigned_agent_id, status, priority, last_message_at, created_at, customers(phone, internal_name, preferred_language, status, created_at, last_seen_at)"
+      "id, customer_id, assigned_agent_id, status, priority, last_message_at, created_at, customers(phone, internal_name, full_name, email, country, note_summary, preferred_language, status, created_at, last_seen_at), assigned_agent:agents!conversations_assigned_agent_id_fkey(id, full_name, email)"
     )
     .is("deleted_at", null)
     .order("last_message_at", { ascending: false, nullsFirst: false })
@@ -292,7 +366,7 @@ export async function getConversationSummary(conversationId: string) {
   const { data, error } = await supabase
     .from("conversations")
     .select(
-      "id, customer_id, assigned_agent_id, status, priority, last_message_at, created_at, customers(phone, internal_name, preferred_language, status, created_at, last_seen_at)"
+      "id, customer_id, assigned_agent_id, status, priority, last_message_at, created_at, customers(phone, internal_name, full_name, email, country, note_summary, preferred_language, status, created_at, last_seen_at), assigned_agent:agents!conversations_assigned_agent_id_fkey(id, full_name, email)"
     )
     .eq("id", conversationId)
     .is("deleted_at", null)
@@ -351,6 +425,7 @@ export async function markStaffMessagesReadForCustomer(
     .update({ read_at: new Date().toISOString() })
     .eq("conversation_id", conversationId)
     .eq("sender_type", "agent")
+    .in("type", ["text", "file"])
     .is("read_at", null)
     .is("deleted_at", null);
 
@@ -366,6 +441,7 @@ export async function markCustomerMessagesReadForStaff(conversationId: string) {
     .update({ read_at: new Date().toISOString() })
     .eq("conversation_id", conversationId)
     .eq("sender_type", "customer")
+    .in("type", ["text", "file"])
     .is("read_at", null)
     .is("deleted_at", null);
 
