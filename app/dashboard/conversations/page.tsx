@@ -169,14 +169,10 @@ export default async function StaffConversationsPage({
           <Link href="/dashboard">Dashboard</Link>
         </div>
 
-        {conversations.length === 0 ? (
-          <p className="empty-state">No conversations yet.</p>
-        ) : (
-          <ConversationSidebarList
-            conversations={conversations}
-            selectedConversationId={selectedConversationId}
-          />
-        )}
+        <ConversationSidebarList
+          conversations={conversations}
+          selectedConversationId={selectedConversationId}
+        />
       </aside>
 
       <ConversationSearchProvider>

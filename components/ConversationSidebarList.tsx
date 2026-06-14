@@ -34,7 +34,11 @@ export function ConversationSidebarList({
       </label>
 
       {filteredConversations.length === 0 ? (
-        <p className="empty-state">No conversations found.</p>
+        <p className="empty-state">
+          {conversations.length === 0 && !normalizedQuery
+            ? "No conversations yet."
+            : "No conversations found."}
+        </p>
       ) : (
         <nav className="conversation-list">
           {filteredConversations.map((conversation) => (
