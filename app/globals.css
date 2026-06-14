@@ -683,6 +683,31 @@ select {
   font-size: 13px;
 }
 
+.presence-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.presence-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.presence-label.online {
+  color: #128c7e;
+}
+
+.presence-label.offline {
+  color: #8a98a3;
+}
+
 .conversation-link small {
   font-size: 12px;
 }

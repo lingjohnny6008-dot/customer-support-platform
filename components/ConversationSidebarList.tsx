@@ -4,6 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import type { ConversationSummary } from "@/lib/types";
 
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
+
+function isCustomerOnline(lastSeenAt: string | null) {
+  return lastSeenAt
+    ? Date.now() - new Date(lastSeenAt).getTime() <= ONLINE_WINDOW_MS
+    : false;
+}
+
 export function ConversationSidebarList({
   conversations,
   selectedConversationId
@@ -41,32 +49,39 @@ export function ConversationSidebarList({
         </p>
       ) : (
         <nav className="conversation-list">
-          {filteredConversations.map((conversation) => (
-            <Link
-              className={
-                conversation.id === selectedConversationId
-                  ? "conversation-link active"
-                  : "conversation-link"
-              }
-              href={`/dashboard/conversations?conversationId=${conversation.id}`}
-              key={conversation.id}
-            >
-              <strong>
-                {conversation.customer.internal_name}
-                {conversation.unread_customer_count > 0 ? (
-                  <span className="unread-count-badge">
-                    {conversation.unread_customer_count}
-                  </span>
-                ) : null}
-              </strong>
-              <span>{conversation.customer.phone}</span>
-              <small>
-                {conversation.last_message_at
-                  ? new Date(conversation.last_message_at).toLocaleString()
-                  : "No messages"}
-              </small>
-            </Link>
-          ))}
+          {filteredConversations.map((conversation) => {
+            const online = isCustomerOnline(conversation.customer.last_seen_at);
+
+            return (
+              <Link
+                className={
+                  conversation.id === selectedConversationId
+                    ? "conversation-link active"
+                    : "conversation-link"
+                }
+                href={`/dashboard/conversations?conversationId=${conversation.id}`}
+                key={conversation.id}
+              >
+                <strong>
+                  {conversation.customer.internal_name}
+                  {conversation.unread_customer_count > 0 ? (
+                    <span className="unread-count-badge">
+                      {conversation.unread_customer_count}
+                    </span>
+                  ) : null}
+                </strong>
+                <span>{conversation.customer.phone}</span>
+                <span className={`presence-label ${online ? "online" : "offline"}`}>
+                  {online ? "Online" : "Offline"}
+                </span>
+                <small>
+                  {conversation.last_message_at
+                    ? new Date(conversation.last_message_at).toLocaleString()
+                    : "No messages"}
+                </small>
+              </Link>
+            );
+          })}
         </nav>
       )}
     </>

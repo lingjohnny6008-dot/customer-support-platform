@@ -85,6 +85,10 @@ function CustomerProfileCard({
           <dt>Last activity</dt>
           <dd>{formatDateTime(conversation.last_message_at)}</dd>
         </div>
+        <div>
+          <dt>Last Seen</dt>
+          <dd>{formatDateTime(conversation.customer.last_seen_at)}</dd>
+        </div>
       </dl>
 
       <section className="profile-tags-section">

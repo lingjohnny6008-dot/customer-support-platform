@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   getConversationForCustomer,
-  getConversationForStaff
+  getConversationForStaff,
+  updateCustomerLastSeen
 } from "@/lib/conversations";
 import { getCurrentSession } from "@/lib/session";
 import { createSupabaseAdminClient } from "@/lib/supabase";
@@ -84,7 +85,9 @@ export async function sendCustomerMessageAction(
       throw new Error(error.message);
     }
 
+    await updateCustomerLastSeen(session.id);
     revalidatePath("/chat");
+    revalidatePath("/dashboard/conversations");
     return { successId: data.id as string };
   } catch (error) {
     return {

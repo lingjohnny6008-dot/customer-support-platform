@@ -77,6 +77,7 @@ export type ConversationSummary = {
     preferred_language: CustomerLanguage;
     status: CustomerStatus;
     created_at: string | null;
+    last_seen_at: string | null;
   };
 };
 

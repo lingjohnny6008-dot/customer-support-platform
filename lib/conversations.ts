@@ -14,6 +14,7 @@ type ConversationCustomerRow = {
   preferred_language: CustomerLanguage;
   status: CustomerStatus;
   created_at: string | null;
+  last_seen_at: string | null;
 };
 
 type ConversationRow = {
@@ -83,7 +84,8 @@ function mapConversation(row: ConversationRow): ConversationSummary {
       internal_name: customer?.internal_name ?? "",
       preferred_language: customer?.preferred_language ?? "zh",
       status: customer?.status ?? "active",
-      created_at: customer?.created_at ?? null
+      created_at: customer?.created_at ?? null,
+      last_seen_at: customer?.last_seen_at ?? null
     }
   };
 }
@@ -160,6 +162,19 @@ export async function getOrCreateCustomerConversation(customerId: string) {
   }
 
   return created.id as string;
+}
+
+export async function updateCustomerLastSeen(customerId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("customers")
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq("id", customerId)
+    .is("deleted_at", null);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function getConversationForCustomer(
@@ -254,7 +269,7 @@ export async function listStaffConversations() {
   const { data, error } = await supabase
     .from("conversations")
     .select(
-      "id, customer_id, assigned_agent_id, status, priority, last_message_at, created_at, customers(phone, internal_name, preferred_language, status, created_at)"
+      "id, customer_id, assigned_agent_id, status, priority, last_message_at, created_at, customers(phone, internal_name, preferred_language, status, created_at, last_seen_at)"
     )
     .is("deleted_at", null)
     .order("last_message_at", { ascending: false, nullsFirst: false })
@@ -277,7 +292,7 @@ export async function getConversationSummary(conversationId: string) {
   const { data, error } = await supabase
     .from("conversations")
     .select(
-      "id, customer_id, assigned_agent_id, status, priority, last_message_at, created_at, customers(phone, internal_name, preferred_language, status, created_at)"
+      "id, customer_id, assigned_agent_id, status, priority, last_message_at, created_at, customers(phone, internal_name, preferred_language, status, created_at, last_seen_at)"
     )
     .eq("id", conversationId)
     .is("deleted_at", null)

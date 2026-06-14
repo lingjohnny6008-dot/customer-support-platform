@@ -4,7 +4,8 @@ import { ConversationThread } from "@/components/ConversationThread";
 import {
   getOrCreateCustomerConversation,
   listConversationMessages,
-  markStaffMessagesReadForCustomer
+  markStaffMessagesReadForCustomer,
+  updateCustomerLastSeen
 } from "@/lib/conversations";
 import { getCurrentSession } from "@/lib/session";
 import { getSupabasePublicConfig } from "@/lib/supabase";
@@ -20,6 +21,7 @@ export default async function CustomerChatPage() {
     redirect("/dashboard");
   }
 
+  await updateCustomerLastSeen(session.id);
   const conversationId = await getOrCreateCustomerConversation(session.id);
   await markStaffMessagesReadForCustomer(conversationId, session.id);
   const messages = await listConversationMessages(conversationId);
