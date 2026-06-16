@@ -22,7 +22,7 @@ export async function customerLoginAction(
     };
   }
 
-  redirect("/dashboard");
+  redirect("/chat");
 }
 
 export async function staffLoginAction(
@@ -41,7 +41,7 @@ export async function staffLoginAction(
     };
   }
 
-  redirect("/dashboard");
+  redirect("/dashboard/conversations");
 }
 
 export async function logoutAction() {
