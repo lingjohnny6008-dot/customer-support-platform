@@ -7,6 +7,7 @@ import {
   getCustomerStatus,
   getConversationForCustomer,
   getConversationForStaff,
+  updateConversationStatus,
   updateCustomerLastSeen
 } from "@/lib/conversations";
 import { getCurrentSession } from "@/lib/session";
@@ -28,6 +29,11 @@ export type InternalNoteActionState = {
 };
 
 export type AssignmentActionState = {
+  error?: string;
+  success?: string;
+};
+
+export type ConversationStatusActionState = {
   error?: string;
   success?: string;
 };
@@ -179,6 +185,8 @@ export async function sendCustomerMessageAction(
       throw new Error("Your account is suspended.");
     }
 
+    await updateConversationStatus(conversationId, "open");
+
     const supabase = createSupabaseAdminClient();
     if (image) {
       const messageId = await uploadImageMessage({
@@ -248,6 +256,10 @@ export async function sendAgentMessageAction(
 
     if (!conversation) {
       throw new Error("Conversation not found.");
+    }
+
+    if (conversation.status === "closed") {
+      throw new Error("Conversation is closed. Reopen to reply.");
     }
 
     const supabase = createSupabaseAdminClient();
@@ -431,10 +443,6 @@ export async function assignConversationAction(
       throw new Error("Conversation is required.");
     }
 
-    if (!agentId) {
-      throw new Error("Assigned agent is required.");
-    }
-
     const conversation = await getConversationForStaff(conversationId);
 
     if (!conversation) {
@@ -443,10 +451,60 @@ export async function assignConversationAction(
 
     await assignConversationToAgent(conversationId, agentId);
     revalidatePath("/dashboard/conversations");
-    return { success: "Conversation assigned." };
+    return {
+      success: agentId ? "Conversation assigned." : "Conversation unassigned."
+    };
   } catch (error) {
     return {
       error: error instanceof Error ? error.message : "Assignment failed."
+    };
+  }
+}
+
+export async function updateConversationStatusAction(
+  _previousState: ConversationStatusActionState,
+  formData: FormData
+): Promise<ConversationStatusActionState> {
+  const session = await getCurrentSession();
+
+  if (!session) {
+    redirect("/login/agent");
+  }
+
+  if (session.role !== "agent" && session.role !== "admin") {
+    redirect("/dashboard");
+  }
+
+  try {
+    const conversationId = readText(formData, "conversation_id");
+    const nextStatus = readText(formData, "status");
+
+    if (!conversationId) {
+      throw new Error("Conversation is required.");
+    }
+
+    if (nextStatus !== "open" && nextStatus !== "closed") {
+      throw new Error("Conversation status is invalid.");
+    }
+
+    const conversation = await getConversationForStaff(conversationId);
+
+    if (!conversation) {
+      throw new Error("Conversation not found.");
+    }
+
+    await updateConversationStatus(conversationId, nextStatus);
+    revalidatePath("/dashboard/conversations");
+    return {
+      success:
+        nextStatus === "closed"
+          ? "Conversation closed."
+          : "Conversation reopened."
+    };
+  } catch (error) {
+    return {
+      error:
+        error instanceof Error ? error.message : "Conversation status failed."
     };
   }
 }

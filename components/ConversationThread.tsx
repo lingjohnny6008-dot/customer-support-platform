@@ -46,6 +46,7 @@ type ConversationThreadProps = {
   initialInternalNotes?: InternalNote[];
   currentUserRole: "customer" | "agent" | "admin";
   currentUserId: string;
+  conversationStatus?: "open" | "pending" | "resolved" | "closed";
   supabaseUrl: string;
   supabaseAnonKey: string;
   enableEnterToSend?: boolean;
@@ -121,12 +122,19 @@ function getImageUrl(message: ChatMessage) {
   return message.attachments?.[0]?.file_url ?? message.body;
 }
 
+function getTypingLabel(currentUserRole: ConversationThreadProps["currentUserRole"]) {
+  return currentUserRole === "customer"
+    ? "Support is typing..."
+    : "Customer is typing...";
+}
+
 export function ConversationThread({
   conversationId,
   initialMessages,
   initialInternalNotes = [],
   currentUserRole,
   currentUserId,
+  conversationStatus = "open",
   supabaseUrl,
   supabaseAnonKey,
   enableEnterToSend = false,
@@ -146,16 +154,23 @@ export function ConversationThread({
   );
   const [messages, setMessages] = useState(initialMessages);
   const [quickReplyQuery, setQuickReplyQuery] = useState<string | null>(null);
+  const [isRemoteTyping, setIsRemoteTyping] = useState(false);
+  const typingChannelRef = useRef<ReturnType<
+    ReturnType<typeof createSupabaseBrowserClient>["channel"]
+  > | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const conversationSearch = useConversationSearch();
   const searchQuery = conversationSearch?.query.trim().toLowerCase() ?? "";
   const canUseInternalNotes =
     Boolean(internalNoteAction) && currentUserRole !== "customer";
+  const canSendMessage =
+    currentUserRole === "customer" || conversationStatus !== "closed";
   const filteredQuickReplies =
     quickReplyQuery === null
       ? []
       : quickReplies
           .filter((quickReply) =>
-            quickReply.title
+            `${quickReply.category} ${quickReply.title} ${quickReply.content}`
               .toLowerCase()
               .includes(quickReplyQuery.toLowerCase())
           )
@@ -219,9 +234,54 @@ export function ConversationThread({
   }, [conversationId, supabaseAnonKey, supabaseUrl]);
 
   useEffect(() => {
+    const supabase = createSupabaseBrowserClient(supabaseUrl, supabaseAnonKey);
+    const channel = supabase.channel(`typing:${conversationId}`, {
+      config: {
+        presence: {
+          key: `${currentUserRole}:${currentUserId}`
+        }
+      }
+    });
+
+    function syncTypingState() {
+      const state = channel.presenceState() as Record<
+        string,
+        Array<{ role?: ConversationThreadProps["currentUserRole"] }>
+      >;
+      const remoteUsers = Object.values(state).flat();
+      const hasRemoteTyping = remoteUsers.some((user) =>
+        currentUserRole === "customer"
+          ? user.role === "agent" || user.role === "admin"
+          : user.role === "customer"
+      );
+
+      setIsRemoteTyping(hasRemoteTyping);
+    }
+
+    channel.on("presence", { event: "sync" }, syncTypingState).subscribe();
+    typingChannelRef.current = channel;
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      typingChannelRef.current = null;
+      supabase.removeChannel(channel);
+    };
+  }, [
+    conversationId,
+    currentUserId,
+    currentUserRole,
+    supabaseAnonKey,
+    supabaseUrl
+  ]);
+
+  useEffect(() => {
     if (state.successId) {
       formRef.current?.reset();
       setQuickReplyQuery(null);
+      stopTyping();
     }
   }, [state.successId]);
 
@@ -263,7 +323,35 @@ export function ConversationThread({
     event.currentTarget.form?.requestSubmit();
   }
 
+  function startTyping() {
+    typingChannelRef.current?.track({
+      role: currentUserRole,
+      userId: currentUserId,
+      typing: true,
+      updatedAt: Date.now()
+    });
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping();
+    }, 3000);
+  }
+
+  function stopTyping() {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+
+    typingChannelRef.current?.untrack();
+  }
+
   function handleMessageInputChange(event: ChangeEvent<HTMLTextAreaElement>) {
+    startTyping();
+
     const textarea = event.currentTarget;
     const cursor = textarea.selectionStart;
     const textBeforeCursor = textarea.value.slice(0, cursor);
@@ -302,6 +390,7 @@ export function ConversationThread({
 
     textarea.value = nextValue;
     setQuickReplyQuery(null);
+    startTyping();
     requestAnimationFrame(() => {
       const nextCursor = `${prefix}${quickReply.content}`.length;
       textarea.focus();
@@ -417,45 +506,56 @@ export function ConversationThread({
         </form>
       ) : null}
 
-      <form ref={formRef} className="message-form" action={formAction}>
-        <input type="hidden" name="conversation_id" value={conversationId} />
-        <div className="message-input-wrap">
-          {quickReplyQuery !== null && quickReplies.length > 0 ? (
-            <div className="quick-reply-picker">
-              {filteredQuickReplies.length === 0 ? (
-                <p>No quick replies found.</p>
-              ) : (
-                filteredQuickReplies.map((quickReply) => (
-                  <button
-                    key={quickReply.id}
-                    type="button"
-                    onClick={() => insertQuickReply(quickReply)}
-                  >
-                    <strong>{quickReply.title}</strong>
-                    <span>{quickReply.content}</span>
-                  </button>
-                ))
-              )}
-            </div>
-          ) : null}
-          <textarea
-            ref={messageTextareaRef}
-            name="body"
-            placeholder="Type a message"
-            rows={3}
-            maxLength={4000}
-            onChange={handleMessageInputChange}
-            onKeyDown={handleTextareaKeyDown}
-          />
-          <input
-            className="message-image-input"
-            name="image"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-          />
-        </div>
-        <SubmitButton />
-      </form>
+      {isRemoteTyping ? (
+        <p className="typing-indicator">{getTypingLabel(currentUserRole)}</p>
+      ) : null}
+
+      {canSendMessage ? (
+        <form ref={formRef} className="message-form" action={formAction}>
+          <input type="hidden" name="conversation_id" value={conversationId} />
+          <div className="message-input-wrap">
+            {quickReplyQuery !== null && quickReplies.length > 0 ? (
+              <div className="quick-reply-picker">
+                {filteredQuickReplies.length === 0 ? (
+                  <p>No quick replies found.</p>
+                ) : (
+                  filteredQuickReplies.map((quickReply) => (
+                    <button
+                      key={quickReply.id}
+                      type="button"
+                      onClick={() => insertQuickReply(quickReply)}
+                    >
+                      <small>{quickReply.category}</small>
+                      <strong>{quickReply.title}</strong>
+                      <span>{quickReply.content}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
+            <textarea
+              ref={messageTextareaRef}
+              name="body"
+              placeholder="Type a message"
+              rows={3}
+              maxLength={4000}
+              onChange={handleMessageInputChange}
+              onKeyDown={handleTextareaKeyDown}
+            />
+            <input
+              className="message-image-input"
+              name="image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+            />
+          </div>
+          <SubmitButton />
+        </form>
+      ) : (
+        <p className="closed-conversation-message">
+          Conversation is closed. Reopen to reply.
+        </p>
+      )}
       {state.error ? <p className="error">{state.error}</p> : null}
     </section>
   );

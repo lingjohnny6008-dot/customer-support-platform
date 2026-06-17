@@ -132,6 +132,7 @@ export type QuickReply = {
   id: string;
   created_at: string;
   updated_at: string;
+  category: string;
   title: string;
   content: string;
   is_active: boolean;

@@ -14,6 +14,7 @@ import { CustomerNotesList } from "@/components/CustomerNotesList";
 import { AddCustomerTagForm, TagBadgeList } from "@/components/CustomerTags";
 import { ConversationThread } from "@/components/ConversationThread";
 import { ConversationAssignmentForm } from "@/components/ConversationAssignmentForm";
+import { ConversationStatusForm } from "@/components/ConversationStatusForm";
 import {
   getConversationSummary,
   listCustomerNotes,
@@ -103,6 +104,14 @@ function CustomerProfileCard({
           <dd>{conversation.assigned_agent?.full_name ?? "Unassigned"}</dd>
         </div>
         <div>
+          <dt>Conversation</dt>
+          <dd>
+            <span className={`conversation-status-pill ${conversation.status}`}>
+              {conversation.status === "closed" ? "Closed" : "Open"}
+            </span>
+          </dd>
+        </div>
+        <div>
           <dt>Created at</dt>
           <dd>{formatDateTime(conversation.customer.created_at)}</dd>
         </div>
@@ -126,6 +135,14 @@ function CustomerProfileCard({
           conversationId={conversation.id}
           assignedAgentId={conversation.assigned_agent_id}
           agents={assignableAgents}
+        />
+      </section>
+
+      <section className="profile-assignment-section">
+        <h3>Conversation Status</h3>
+        <ConversationStatusForm
+          conversationId={conversation.id}
+          status={conversation.status}
         />
       </section>
 
@@ -235,6 +252,7 @@ export default async function StaffConversationsPage({
                 initialInternalNotes={internalNotes}
                 currentUserRole={session.role}
                 currentUserId={session.id}
+                conversationStatus={selectedConversation.status}
                 supabaseUrl={supabaseUrl}
                 supabaseAnonKey={anonKey}
                 enableEnterToSend

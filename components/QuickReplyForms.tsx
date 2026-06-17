@@ -42,6 +42,10 @@ export function CreateQuickReplyForm() {
   return (
     <form className="quick-reply-create-form" action={formAction}>
       <label className="field">
+        <span>Category</span>
+        <input name="category" defaultValue="General" maxLength={80} required />
+      </label>
+      <label className="field">
         <span>Title</span>
         <input name="title" maxLength={100} required />
       </label>
@@ -72,6 +76,13 @@ export function EditQuickReplyForm({
   return (
     <form className="quick-reply-row-form" action={formAction}>
       <input type="hidden" name="quick_reply_id" value={quickReply.id} />
+      <input
+        aria-label="Category"
+        name="category"
+        defaultValue={quickReply.category}
+        maxLength={80}
+        required
+      />
       <input
         aria-label="Title"
         name="title"

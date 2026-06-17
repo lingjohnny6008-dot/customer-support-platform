@@ -40,10 +40,9 @@ export function ConversationAssignmentForm({
         aria-label="Assigned agent"
         name="agent_id"
         defaultValue={assignedAgentId ?? ""}
-        required
       >
-        <option value="" disabled>
-          Select agent
+        <option value="">
+          Unassigned
         </option>
         {agents.map((agent) => (
           <option key={agent.id} value={agent.id}>

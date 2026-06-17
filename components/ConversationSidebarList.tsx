@@ -74,6 +74,9 @@ export function ConversationSidebarList({
                 <small>
                   Assigned: {conversation.assigned_agent?.full_name ?? "Unassigned"}
                 </small>
+                {conversation.status === "closed" ? (
+                  <span className="conversation-list-status">Closed</span>
+                ) : null}
                 <span className={`presence-label ${online ? "online" : "offline"}`}>
                   {online ? "Online" : "Offline"}
                 </span>

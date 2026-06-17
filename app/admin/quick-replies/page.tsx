@@ -57,7 +57,7 @@ export default async function AdminQuickRepliesPage({
             name="q"
             type="search"
             defaultValue={search}
-            placeholder="Search title or content"
+            placeholder="Search category, title, or content"
           />
           <button className="button" type="submit">
             Search
@@ -78,6 +78,7 @@ export default async function AdminQuickRepliesPage({
 
         <div className="quick-reply-table">
           <div className="quick-reply-table-head">
+            <span>Category</span>
             <span>Title</span>
             <span>Content</span>
             <span>Status</span>

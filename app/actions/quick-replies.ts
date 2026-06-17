@@ -29,9 +29,14 @@ async function requireAdmin() {
 }
 
 function readQuickReplyFields(formData: FormData) {
+  const category = readText(formData, "category") || "General";
   const title = readText(formData, "title");
   const content = readText(formData, "content");
   const isActive = formData.get("is_active") === "on";
+
+  if (category.length > 80) {
+    throw new Error("Category is too long.");
+  }
 
   if (!title) {
     throw new Error("Title is required.");
@@ -50,6 +55,7 @@ function readQuickReplyFields(formData: FormData) {
   }
 
   return {
+    category,
     title,
     content,
     isActive
@@ -68,9 +74,11 @@ export async function createQuickReplyAction(
   await requireAdmin();
 
   try {
-    const { title, content, isActive } = readQuickReplyFields(formData);
+    const { category, title, content, isActive } =
+      readQuickReplyFields(formData);
     const supabase = createSupabaseAdminClient();
     const { error } = await supabase.from("quick_replies").insert({
+      category,
       title,
       content,
       is_active: isActive
@@ -97,7 +105,8 @@ export async function updateQuickReplyAction(
 
   try {
     const quickReplyId = readText(formData, "quick_reply_id");
-    const { title, content, isActive } = readQuickReplyFields(formData);
+    const { category, title, content, isActive } =
+      readQuickReplyFields(formData);
 
     if (!quickReplyId) {
       throw new Error("Quick reply ID is required.");
@@ -107,6 +116,7 @@ export async function updateQuickReplyAction(
     const { error } = await supabase
       .from("quick_replies")
       .update({
+        category,
         title,
         content,
         is_active: isActive

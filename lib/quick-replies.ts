@@ -1,7 +1,8 @@
 import { createSupabaseAdminClient } from "@/lib/supabase";
 import type { QuickReply } from "@/lib/types";
 
-const quickReplySelect = "id, created_at, updated_at, title, content, is_active";
+const quickReplySelect =
+  "id, created_at, updated_at, category, title, content, is_active";
 
 export async function listQuickReplies(search: string) {
   const supabase = createSupabaseAdminClient();
@@ -16,7 +17,9 @@ export async function listQuickReplies(search: string) {
 
   if (normalizedSearch) {
     const escaped = normalizedSearch.replaceAll("%", "\\%").replaceAll("_", "\\_");
-    query = query.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
+    query = query.or(
+      `category.ilike.%${escaped}%,title.ilike.%${escaped}%,content.ilike.%${escaped}%`
+    );
   }
 
   const { data, error } = await query;
@@ -35,6 +38,7 @@ export async function listActiveQuickReplies() {
     .select(quickReplySelect)
     .eq("is_active", true)
     .is("deleted_at", null)
+    .order("category", { ascending: true })
     .order("title", { ascending: true })
     .limit(100);
 

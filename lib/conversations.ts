@@ -242,7 +242,7 @@ export async function getConversationForStaff(conversationId: string) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("conversations")
-    .select("id")
+    .select("id, status")
     .eq("id", conversationId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -256,9 +256,24 @@ export async function getConversationForStaff(conversationId: string) {
 
 export async function assignConversationToAgent(
   conversationId: string,
-  agentId: string
+  agentId: string | null
 ) {
   const supabase = createSupabaseAdminClient();
+
+  if (!agentId) {
+    const { error } = await supabase
+      .from("conversations")
+      .update({ assigned_agent_id: null })
+      .eq("id", conversationId)
+      .is("deleted_at", null);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return;
+  }
+
   const { data: agent, error: agentError } = await supabase
     .from("agents")
     .select("id")
@@ -279,6 +294,22 @@ export async function assignConversationToAgent(
   const { error } = await supabase
     .from("conversations")
     .update({ assigned_agent_id: agentId })
+    .eq("id", conversationId)
+    .is("deleted_at", null);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function updateConversationStatus(
+  conversationId: string,
+  status: ConversationSummary["status"]
+) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("conversations")
+    .update({ status })
     .eq("id", conversationId)
     .is("deleted_at", null);
 

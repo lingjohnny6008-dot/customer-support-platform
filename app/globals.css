@@ -349,11 +349,13 @@ select {
 
 .quick-reply-create-form {
   display: grid;
-  grid-template-columns: minmax(180px, 0.85fr) minmax(240px, 1.5fr) auto auto;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(180px, 0.85fr) minmax(240px, 1.5fr) auto auto;
   gap: 14px;
   align-items: end;
 }
 
+.quick-reply-create-form input,
+.quick-reply-row-form input,
 .quick-reply-create-form textarea,
 .quick-reply-row-form textarea {
   width: 100%;
@@ -373,7 +375,7 @@ select {
 .quick-reply-table-head,
 .quick-reply-row-form {
   display: grid;
-  grid-template-columns: 0.9fr 1.6fr 0.65fr auto;
+  grid-template-columns: 0.75fr 0.9fr 1.6fr 0.65fr auto;
   gap: 10px;
   align-items: center;
 }
@@ -753,6 +755,17 @@ select {
   color: #8a98a3;
 }
 
+.conversation-list-status {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  background: #eef0f3;
+  color: #4d5965;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .conversation-link small {
   font-size: 12px;
 }
@@ -917,6 +930,13 @@ select {
   background: #eef8f1;
 }
 
+.quick-reply-picker small {
+  color: #128c7e;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .quick-reply-picker strong {
   color: #17231f;
   font-size: 14px;
@@ -1003,6 +1023,23 @@ select {
   background: #fffdf1;
   padding: 10px 12px;
   color: #302911;
+}
+
+.typing-indicator,
+.closed-conversation-message {
+  margin: 0;
+  border-top: 1px solid #d8e0dc;
+  background: #eef2ef;
+  color: #60736d;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 18px;
+}
+
+.closed-conversation-message {
+  color: #765f16;
+  background: #fbf4d3;
+  border-top-color: #e5d79a;
 }
 
 .internal-note-submit {
@@ -1130,6 +1167,43 @@ select {
 
 .assignment-submit-button:hover {
   background: #0c7468;
+}
+
+.conversation-status-form {
+  display: grid;
+  gap: 8px;
+}
+
+.conversation-status-button {
+  min-height: 38px;
+  border-radius: 8px;
+  background: #3f4752;
+}
+
+.conversation-status-button:hover {
+  background: #2f363f;
+}
+
+.conversation-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.conversation-status-pill.open,
+.conversation-status-pill.pending,
+.conversation-status-pill.resolved {
+  color: #0d5f35;
+  background: #d9fdd3;
+}
+
+.conversation-status-pill.closed {
+  color: #4d5965;
+  background: #eef0f3;
 }
 
 .profile-tags-header {
