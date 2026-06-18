@@ -338,12 +338,18 @@ export async function listConversationMessages(conversationId: string) {
   return (data ?? []) as ChatMessage[];
 }
 
-async function countUnreadCustomerMessages(conversationId: string) {
+async function countUnreadCustomerMessagesByConversation(
+  conversationIds: string[]
+) {
+  if (conversationIds.length === 0) {
+    return new Map<string, number>();
+  }
+
   const supabase = createSupabaseAdminClient();
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from("messages")
-    .select("id", { count: "exact", head: true })
-    .eq("conversation_id", conversationId)
+    .select("conversation_id")
+    .in("conversation_id", conversationIds)
     .eq("sender_type", "customer")
     .in("type", ["text", "file"])
     .is("read_at", null)
@@ -353,19 +359,21 @@ async function countUnreadCustomerMessages(conversationId: string) {
     throw new Error(error.message);
   }
 
-  return count ?? 0;
+  return (data ?? []).reduce((counts, message) => {
+    const currentCount = counts.get(message.conversation_id) ?? 0;
+    counts.set(message.conversation_id, currentCount + 1);
+    return counts;
+  }, new Map<string, number>());
 }
 
 async function attachUnreadCounts(conversations: ConversationSummary[]) {
-  const counts = await Promise.all(
-    conversations.map((conversation) =>
-      countUnreadCustomerMessages(conversation.id)
-    )
+  const countsByConversation = await countUnreadCustomerMessagesByConversation(
+    conversations.map((conversation) => conversation.id)
   );
 
-  return conversations.map((conversation, index) => ({
+  return conversations.map((conversation) => ({
     ...conversation,
-    unread_customer_count: counts[index] ?? 0
+    unread_customer_count: countsByConversation.get(conversation.id) ?? 0
   }));
 }
 
