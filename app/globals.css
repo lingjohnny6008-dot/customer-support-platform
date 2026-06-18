@@ -1199,6 +1199,13 @@ select {
   font-size: 14px;
 }
 
+.profile-export-button {
+  justify-content: center;
+  margin: 16px 22px 10px;
+  text-align: center;
+  text-decoration: none;
+}
+
 .profile-detail-list {
   display: grid;
   margin: 0;

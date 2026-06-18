@@ -73,6 +73,13 @@ function CustomerProfileCard({
         <p>{conversation.customer.phone}</p>
       </header>
 
+      <Link
+        className="button button-secondary profile-export-button"
+        href={`/dashboard/conversations/${conversation.id}/export`}
+      >
+        Export TXT
+      </Link>
+
       <dl className="profile-detail-list">
         <div>
           <dt>Internal name</dt>
