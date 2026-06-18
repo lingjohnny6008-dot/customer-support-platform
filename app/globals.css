@@ -1103,7 +1103,7 @@ select {
   padding: 6px 0;
 }
 
-.profile-detail-list div {
+.profile-detail-list > div {
   display: grid;
   gap: 5px;
   padding: 15px 22px;
@@ -1123,6 +1123,10 @@ select {
   font-size: 14px;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.profile-detail-list dd .assignment-form {
+  margin-top: 10px;
 }
 
 .profile-tags-section {

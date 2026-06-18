@@ -101,7 +101,14 @@ function CustomerProfileCard({
         </div>
         <div>
           <dt>Assigned Agent</dt>
-          <dd>{conversation.assigned_agent?.full_name ?? "Unassigned"}</dd>
+          <dd>
+            <span>{conversation.assigned_agent?.full_name ?? "Unassigned"}</span>
+            <ConversationAssignmentForm
+              conversationId={conversation.id}
+              assignedAgentId={conversation.assigned_agent_id}
+              agents={assignableAgents}
+            />
+          </dd>
         </div>
         <div>
           <dt>Conversation</dt>
@@ -128,15 +135,6 @@ function CustomerProfileCard({
           <dd>{conversation.customer.note_summary ?? "Not set"}</dd>
         </div>
       </dl>
-
-      <section className="profile-assignment-section">
-        <h3>Assign Conversation</h3>
-        <ConversationAssignmentForm
-          conversationId={conversation.id}
-          assignedAgentId={conversation.assigned_agent_id}
-          agents={assignableAgents}
-        />
-      </section>
 
       <section className="profile-assignment-section">
         <h3>Conversation Status</h3>

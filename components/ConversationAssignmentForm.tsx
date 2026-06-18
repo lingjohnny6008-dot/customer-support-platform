@@ -14,7 +14,7 @@ function AssignmentSubmitButton() {
 
   return (
     <button className="button assignment-submit-button" type="submit" disabled={pending}>
-      {pending ? "Assigning..." : "Assign"}
+      {pending ? "Saving..." : "Save"}
     </button>
   );
 }
