@@ -42,6 +42,7 @@ export default async function AdminQuickRepliesPage({
         <div className="admin-header-actions">
           <Link href="/admin/customers">Customers</Link>
           <Link href="/admin/agents">Agents</Link>
+          <Link href="/admin/audit-logs">Audit logs</Link>
           <form action={logoutAction}>
             <button className="button button-secondary" type="submit">
               Sign out

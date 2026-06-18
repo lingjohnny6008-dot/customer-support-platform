@@ -53,6 +53,39 @@ export type ManagedAgent = {
   is_active: boolean;
 };
 
+export type AgentAuditAction =
+  | "agent_message_sent"
+  | "conversation_closed"
+  | "conversation_reopened"
+  | "customer_tag_added"
+  | "customer_tag_deleted"
+  | "conversation_assigned"
+  | "conversation_reassigned"
+  | "conversation_unassigned"
+  | "customer_status_changed"
+  | "internal_note_added";
+
+export type AgentAuditLog = {
+  id: string;
+  created_at: string;
+  actor_agent_id: string | null;
+  actor_role: "agent" | "admin";
+  action: AgentAuditAction | string;
+  conversation_id: string | null;
+  customer_id: string | null;
+  target_agent_id: string | null;
+  message_id: string | null;
+  internal_note_id: string | null;
+  tag_id: string | null;
+  old_value: unknown;
+  new_value: unknown;
+  metadata: unknown;
+  agent: {
+    username: string | null;
+    email: string;
+  } | null;
+};
+
 export type MessageSenderType = "customer" | "agent" | "system";
 
 export type ChatMessage = {

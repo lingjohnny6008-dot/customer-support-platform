@@ -270,6 +270,56 @@ select {
   padding-top: 12px;
 }
 
+.audit-log-table {
+  display: grid;
+  gap: 10px;
+  overflow-x: auto;
+}
+
+.audit-log-table-head,
+.audit-log-record {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 0.9fr)
+    minmax(190px, 1.1fr)
+    minmax(170px, 1fr)
+    minmax(110px, 0.7fr)
+    minmax(220px, 1.2fr)
+    minmax(240px, 1.3fr);
+  gap: 10px;
+  align-items: start;
+  min-width: 1080px;
+}
+
+.audit-log-table-head {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 0 2px;
+}
+
+.audit-log-record {
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  font-size: 13px;
+  padding-top: 12px;
+}
+
+.audit-log-record code {
+  background: #f8faf9;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  display: block;
+  font-family:
+    "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  padding: 8px;
+  white-space: pre-wrap;
+}
+
 .admin-customer-tags {
   display: grid;
   gap: 10px;
@@ -441,6 +491,8 @@ select {
   .quick-reply-create-form,
   .quick-reply-table-head,
   .quick-reply-row-form,
+  .audit-log-table-head,
+  .audit-log-record,
   .customer-table-head,
   .customer-row-form,
   .reset-form,
@@ -450,8 +502,13 @@ select {
 
   .customer-table-head,
   .agent-table-head,
-  .quick-reply-table-head {
+  .quick-reply-table-head,
+  .audit-log-table-head {
     display: none;
+  }
+
+  .audit-log-record {
+    min-width: 0;
   }
 }
 

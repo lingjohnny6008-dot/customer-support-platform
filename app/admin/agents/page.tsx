@@ -40,6 +40,7 @@ export default async function AdminAgentsPage({ searchParams }: AgentsPageProps)
         </div>
         <div className="admin-header-actions">
           <Link href="/admin/customers">Customers</Link>
+          <Link href="/admin/audit-logs">Audit logs</Link>
           <Link href="/admin/quick-replies">Quick replies</Link>
           <form action={logoutAction}>
             <button className="button button-secondary" type="submit">

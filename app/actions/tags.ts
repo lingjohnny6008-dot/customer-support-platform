@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createAgentAuditLog } from "@/lib/audit-logs";
 import { canManageCustomers } from "@/lib/auth";
 import { getCurrentSession } from "@/lib/session";
 import { createSupabaseAdminClient } from "@/lib/supabase";
@@ -27,7 +28,7 @@ async function requireStaff() {
     redirect("/dashboard");
   }
 
-  return session;
+  return session as typeof session & { role: "agent" | "admin" };
 }
 
 function revalidateTagSurfaces() {
@@ -59,16 +60,29 @@ export async function addCustomerTagAction(
     }
 
     const supabase = createSupabaseAdminClient();
-    const { error } = await supabase.from("customer_tags").insert({
-      customer_id: customerId,
-      created_by_agent_id: session.id,
-      name,
-      color
-    });
+    const { data, error } = await supabase
+      .from("customer_tags")
+      .insert({
+        customer_id: customerId,
+        created_by_agent_id: session.id,
+        name,
+        color
+      })
+      .select("id")
+      .single();
 
     if (error) {
       throw new Error(error.message);
     }
+
+    await createAgentAuditLog({
+      actorAgentId: session.id,
+      actorRole: session.role,
+      action: "customer_tag_added",
+      customerId,
+      tagId: data.id as string,
+      newValue: { name, color }
+    });
 
     revalidateTagSurfaces();
     return { success: "Tag added." };
@@ -97,6 +111,21 @@ export async function deleteCustomerTagAction(
     }
 
     const supabase = createSupabaseAdminClient();
+    const { data: existingTag, error: existingTagError } = await supabase
+      .from("customer_tags")
+      .select("id, customer_id, name, color")
+      .eq("id", tagId)
+      .is("deleted_at", null)
+      .maybeSingle();
+
+    if (existingTagError) {
+      throw new Error(existingTagError.message);
+    }
+
+    if (!existingTag) {
+      throw new Error("Tag not found.");
+    }
+
     const { error } = await supabase
       .from("customer_tags")
       .update({ deleted_at: new Date().toISOString() })
@@ -106,6 +135,18 @@ export async function deleteCustomerTagAction(
     if (error) {
       throw new Error(error.message);
     }
+
+    await createAgentAuditLog({
+      actorAgentId: session.id,
+      actorRole: session.role,
+      action: "customer_tag_deleted",
+      customerId: existingTag.customer_id as string,
+      tagId,
+      oldValue: {
+        name: existingTag.name as string,
+        color: existingTag.color as string | null
+      }
+    });
 
     revalidateTagSurfaces();
     return { success: "Tag deleted." };

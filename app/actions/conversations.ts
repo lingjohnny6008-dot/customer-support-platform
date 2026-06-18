@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createAgentAuditLog } from "@/lib/audit-logs";
 import {
   assignConversationToAgent,
   getCustomerStatus,
@@ -278,6 +279,34 @@ export async function sendAgentMessageAction(
         image
       });
 
+      if (!conversation.assigned_agent_id) {
+        await createAgentAuditLog({
+          actorAgentId: session.id,
+          actorRole: session.role,
+          action: "conversation_assigned",
+          conversationId,
+          customerId: conversation.customer_id,
+          targetAgentId: session.id,
+          oldValue: { assigned_agent_id: null },
+          newValue: { assigned_agent_id: session.id },
+          metadata: { source: "auto_on_reply" }
+        });
+      }
+
+      await createAgentAuditLog({
+        actorAgentId: session.id,
+        actorRole: session.role,
+        action: "agent_message_sent",
+        conversationId,
+        customerId: conversation.customer_id,
+        messageId,
+        newValue: {
+          message_type: "file",
+          file_type: image.type,
+          file_size: image.size
+        }
+      });
+
       revalidatePath("/dashboard/conversations");
       return { successId: messageId };
     }
@@ -297,6 +326,30 @@ export async function sendAgentMessageAction(
     if (error) {
       throw new Error(error.message);
     }
+
+    if (!conversation.assigned_agent_id) {
+      await createAgentAuditLog({
+        actorAgentId: session.id,
+        actorRole: session.role,
+        action: "conversation_assigned",
+        conversationId,
+        customerId: conversation.customer_id,
+        targetAgentId: session.id,
+        oldValue: { assigned_agent_id: null },
+        newValue: { assigned_agent_id: session.id },
+        metadata: { source: "auto_on_reply" }
+      });
+    }
+
+    await createAgentAuditLog({
+      actorAgentId: session.id,
+      actorRole: session.role,
+      action: "agent_message_sent",
+      conversationId,
+      customerId: conversation.customer_id,
+      messageId: data.id as string,
+      newValue: { message_type: "text" }
+    });
 
     revalidatePath("/dashboard/conversations");
     return { successId: data.id as string };
@@ -412,6 +465,16 @@ export async function createInternalNoteAction(
       throw new Error(error.message);
     }
 
+    await createAgentAuditLog({
+      actorAgentId: session.id,
+      actorRole: session.role,
+      action: "internal_note_added",
+      conversationId,
+      customerId: conversation.customer_id,
+      internalNoteId: data.id as string,
+      newValue: { body_length: body.length }
+    });
+
     revalidatePath("/dashboard/conversations");
     return { successId: data.id as string };
   } catch (error) {
@@ -449,10 +512,32 @@ export async function assignConversationAction(
       throw new Error("Conversation not found.");
     }
 
-    await assignConversationToAgent(conversationId, agentId);
+    const normalizedAgentId = agentId || null;
+
+    await assignConversationToAgent(conversationId, normalizedAgentId);
+
+    if (conversation.assigned_agent_id !== normalizedAgentId) {
+      await createAgentAuditLog({
+        actorAgentId: session.id,
+        actorRole: session.role,
+        action: !normalizedAgentId
+          ? "conversation_unassigned"
+          : conversation.assigned_agent_id
+            ? "conversation_reassigned"
+            : "conversation_assigned",
+        conversationId,
+        customerId: conversation.customer_id,
+        targetAgentId: normalizedAgentId,
+        oldValue: { assigned_agent_id: conversation.assigned_agent_id },
+        newValue: { assigned_agent_id: normalizedAgentId }
+      });
+    }
+
     revalidatePath("/dashboard/conversations");
     return {
-      success: agentId ? "Conversation assigned." : "Conversation unassigned."
+      success: normalizedAgentId
+        ? "Conversation assigned."
+        : "Conversation unassigned."
     };
   } catch (error) {
     return {
@@ -494,6 +579,22 @@ export async function updateConversationStatusAction(
     }
 
     await updateConversationStatus(conversationId, nextStatus);
+
+    if (conversation.status !== nextStatus) {
+      await createAgentAuditLog({
+        actorAgentId: session.id,
+        actorRole: session.role,
+        action:
+          nextStatus === "closed"
+            ? "conversation_closed"
+            : "conversation_reopened",
+        conversationId,
+        customerId: conversation.customer_id,
+        oldValue: { status: conversation.status },
+        newValue: { status: nextStatus }
+      });
+    }
+
     revalidatePath("/dashboard/conversations");
     return {
       success:

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { createAgentAuditLog } from "@/lib/audit-logs";
 import { canManageCustomers } from "@/lib/auth";
 import { isCustomerLanguage, isCustomerStatus } from "@/lib/customer-options";
 import { getCurrentSession } from "@/lib/session";
@@ -122,7 +123,7 @@ export async function updateCustomerAction(
   _previousState: CustomerActionState,
   formData: FormData
 ): Promise<CustomerActionState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   try {
     const customerId = readText(formData, "customer_id");
@@ -142,6 +143,22 @@ export async function updateCustomerAction(
     }
 
     const supabase = createSupabaseAdminClient();
+    const { data: existingCustomer, error: existingCustomerError } =
+      await supabase
+        .from("customers")
+        .select("status")
+        .eq("id", customerId)
+        .is("deleted_at", null)
+        .maybeSingle();
+
+    if (existingCustomerError) {
+      throw new Error(existingCustomerError.message);
+    }
+
+    if (!existingCustomer) {
+      throw new Error("Customer not found.");
+    }
+
     const { error } = await supabase.rpc("update_customer_admin", {
       input_customer_id: customerId,
       input_phone: phone,
@@ -156,6 +173,17 @@ export async function updateCustomerAction(
 
     if (error) {
       throw new Error(error.message);
+    }
+
+    if (existingCustomer.status !== status) {
+      await createAgentAuditLog({
+        actorAgentId: session.id,
+        actorRole: "admin",
+        action: "customer_status_changed",
+        customerId,
+        oldValue: { status: existingCustomer.status as string },
+        newValue: { status }
+      });
     }
 
     revalidatePath("/admin/customers");

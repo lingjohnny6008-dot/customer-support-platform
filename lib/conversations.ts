@@ -242,7 +242,7 @@ export async function getConversationForStaff(conversationId: string) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("conversations")
-    .select("id, status")
+    .select("id, customer_id, assigned_agent_id, status")
     .eq("id", conversationId)
     .is("deleted_at", null)
     .maybeSingle();

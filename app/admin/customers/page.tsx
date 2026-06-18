@@ -46,6 +46,7 @@ export default async function AdminCustomersPage({
         </div>
         <div className="admin-header-actions">
           <Link href="/admin/agents">Agents</Link>
+          <Link href="/admin/audit-logs">Audit logs</Link>
           <Link href="/admin/quick-replies">Quick replies</Link>
           <form action={logoutAction}>
             <button className="button button-secondary" type="submit">
