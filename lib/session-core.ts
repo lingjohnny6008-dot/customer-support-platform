@@ -1,7 +1,8 @@
 import type { SessionUser } from "@/lib/types";
 
 const SESSION_COOKIE = "scp_session";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8;
+const STAFF_SESSION_MAX_AGE_SECONDS = 60 * 60 * 8;
+const CUSTOMER_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 
 type SessionPayload = SessionUser & {
   exp: number;
@@ -61,10 +62,16 @@ async function verifySignature(payload: string, signature: string) {
   return expected === signature;
 }
 
+function getSessionMaxAgeSeconds(role: SessionUser["role"]) {
+  return role === "customer"
+    ? CUSTOMER_SESSION_MAX_AGE_SECONDS
+    : STAFF_SESSION_MAX_AGE_SECONDS;
+}
+
 export async function encodeSession(user: SessionUser) {
   const payload: SessionPayload = {
     ...user,
-    exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS
+    exp: Math.floor(Date.now() / 1000) + getSessionMaxAgeSeconds(user.role)
   };
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const signature = await signPayload(encodedPayload);
@@ -102,4 +109,9 @@ export async function readSessionFromCookie(cookieValue?: string) {
   } satisfies SessionUser;
 }
 
-export { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS };
+export {
+  CUSTOMER_SESSION_MAX_AGE_SECONDS,
+  getSessionMaxAgeSeconds,
+  SESSION_COOKIE,
+  STAFF_SESSION_MAX_AGE_SECONDS
+};

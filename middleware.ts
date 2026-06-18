@@ -20,8 +20,7 @@ export async function middleware(request: NextRequest) {
 
   if (isProtectedRoute && !session) {
     const loginPath = (
-      pathname.startsWith("/admin") ||
-      pathname.startsWith("/dashboard/conversations")
+      pathname.startsWith("/admin") || pathname.startsWith("/dashboard")
     )
       ? "/staff-login"
       : "/login/customer";

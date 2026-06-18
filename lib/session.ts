@@ -2,9 +2,9 @@ import { cookies } from "next/headers";
 import type { SessionUser } from "@/lib/types";
 import {
   encodeSession,
+  getSessionMaxAgeSeconds,
   readSessionFromCookie,
-  SESSION_COOKIE,
-  SESSION_MAX_AGE_SECONDS
+  SESSION_COOKIE
 } from "@/lib/session-core";
 
 export async function createSession(user: SessionUser) {
@@ -15,7 +15,7 @@ export async function createSession(user: SessionUser) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS
+    maxAge: getSessionMaxAgeSeconds(user.role)
   });
 }
 
