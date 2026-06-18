@@ -183,7 +183,7 @@ export default async function StaffConversationsPage({
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (session.role !== "agent" && session.role !== "admin") {
@@ -218,6 +218,7 @@ export default async function StaffConversationsPage({
       : [];
   const assignableAgents = await listAssignableAgents();
   const { supabaseUrl, anonKey } = getSupabasePublicConfig();
+  const initialNow = Date.now();
 
   return (
     <main className="staff-chat-shell">
@@ -230,6 +231,7 @@ export default async function StaffConversationsPage({
         <ConversationSidebarList
           conversations={conversations}
           selectedConversationId={selectedConversationId}
+          initialNow={initialNow}
         />
       </aside>
 

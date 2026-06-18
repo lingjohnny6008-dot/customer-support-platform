@@ -61,19 +61,10 @@ export async function authenticateStaff(
   }
 
   const supabase = createSupabaseAdminClient();
-  console.log("LOGIN INPUT", {
-    identifier,
-    expectedRole
-  });
-
   const { data, error } = await supabase.rpc("verify_staff_login", {
     input_identifier: identifier,
     input_password: password,
     expected_role: expectedRole
-  });
-  console.log("LOGIN RESULT", {
-    data,
-    error
   });
 
   if (error || !data) {

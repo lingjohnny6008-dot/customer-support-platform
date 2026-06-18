@@ -20,7 +20,7 @@ async function requireStaff() {
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (session.role !== "agent" && session.role !== "admin") {

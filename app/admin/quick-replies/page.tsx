@@ -22,7 +22,7 @@ export default async function AdminQuickRepliesPage({
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (!canManageCustomers(session.role)) {

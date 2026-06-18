@@ -24,7 +24,7 @@ export default async function AdminCustomersPage({
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (!canManageCustomers(session.role)) {

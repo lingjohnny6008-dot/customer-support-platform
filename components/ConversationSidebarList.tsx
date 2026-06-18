@@ -1,25 +1,28 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ConversationSummary } from "@/lib/types";
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
-function isCustomerOnline(lastSeenAt: string | null) {
+function isCustomerOnline(lastSeenAt: string | null, now: number) {
   return lastSeenAt
-    ? Date.now() - new Date(lastSeenAt).getTime() <= ONLINE_WINDOW_MS
+    ? now - new Date(lastSeenAt).getTime() <= ONLINE_WINDOW_MS
     : false;
 }
 
 export function ConversationSidebarList({
   conversations,
-  selectedConversationId
+  selectedConversationId,
+  initialNow
 }: {
   conversations: ConversationSummary[];
   selectedConversationId: string | null;
+  initialNow: number;
 }) {
   const [query, setQuery] = useState("");
+  const [now, setNow] = useState(initialNow);
   const normalizedQuery = query.trim().toLowerCase();
   const filteredConversations = normalizedQuery
     ? conversations.filter((conversation) => {
@@ -28,6 +31,13 @@ export function ConversationSidebarList({
         return name.includes(normalizedQuery) || phone.includes(normalizedQuery);
       })
     : conversations;
+
+  useEffect(() => {
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 30_000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <>
@@ -50,7 +60,10 @@ export function ConversationSidebarList({
       ) : (
         <nav className="conversation-list">
           {filteredConversations.map((conversation) => {
-            const online = isCustomerOnline(conversation.customer.last_seen_at);
+            const online = isCustomerOnline(
+              conversation.customer.last_seen_at,
+              now
+            );
 
             return (
               <Link

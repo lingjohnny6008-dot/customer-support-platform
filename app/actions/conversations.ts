@@ -236,7 +236,7 @@ export async function sendAgentMessageAction(
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (session.role !== "agent" && session.role !== "admin") {
@@ -314,7 +314,7 @@ export async function createCustomerNoteAction(
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (session.role !== "agent" && session.role !== "admin") {
@@ -368,7 +368,7 @@ export async function createInternalNoteAction(
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (session.role !== "agent" && session.role !== "admin") {
@@ -428,7 +428,7 @@ export async function assignConversationAction(
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (session.role !== "agent" && session.role !== "admin") {
@@ -468,7 +468,7 @@ export async function updateConversationStatusAction(
   const session = await getCurrentSession();
 
   if (!session) {
-    redirect("/login/agent");
+    redirect("/staff-login");
   }
 
   if (session.role !== "agent" && session.role !== "admin") {
