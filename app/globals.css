@@ -677,7 +677,7 @@ select {
   border-right: 1px solid #d5ddd8;
   background: #f7f8f6;
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -702,6 +702,51 @@ select {
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
+}
+
+.conversation-filter-list {
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid #e1e7e3;
+  background: #f7f8f6;
+  padding: 10px 12px;
+}
+
+.conversation-filter-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  border-radius: 8px;
+  color: #40544e;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 9px;
+  text-decoration: none;
+}
+
+.conversation-filter-link:hover {
+  background: #edf3ef;
+}
+
+.conversation-filter-link.active {
+  background: #d9ede5;
+  color: #0f4d43;
+}
+
+.conversation-filter-link strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #d7dfda;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0 7px;
 }
 
 .sidebar-search-field {

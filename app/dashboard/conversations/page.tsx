@@ -27,7 +27,13 @@ import { getCurrentSession } from "@/lib/session";
 import { listActiveQuickReplies } from "@/lib/quick-replies";
 import { getSupabasePublicConfig } from "@/lib/supabase";
 import { listCustomerTags } from "@/lib/tags";
+import { listTagsForCustomers } from "@/lib/tags";
 import { listAssignableAgents } from "@/lib/agents";
+import {
+  filterConversations,
+  getConversationFilter,
+  getConversationFilterCounts
+} from "@/lib/conversation-filters";
 import type {
   ConversationSummary,
   CustomerNote,
@@ -38,6 +44,7 @@ import type {
 type ConversationsPageProps = {
   searchParams?: {
     conversationId?: string;
+    filter?: string;
   };
 };
 
@@ -190,12 +197,50 @@ export default async function StaffConversationsPage({
     redirect("/dashboard");
   }
 
-  let conversations = await listStaffConversations();
+  let allConversations = await listStaffConversations();
+  const activeFilter = getConversationFilter(searchParams?.filter);
+  const initialNow = Date.now();
+  let tagsByCustomer = await listTagsForCustomers(
+    allConversations.map((conversation) => conversation.customer_id)
+  );
+  let filterCounts = getConversationFilterCounts({
+    conversations: allConversations,
+    currentAgentId: session.id,
+    tagsByCustomer,
+    now: initialNow
+  });
+  let conversations = filterConversations({
+    conversations: allConversations,
+    filter: activeFilter,
+    currentAgentId: session.id,
+    tagsByCustomer,
+    now: initialNow
+  });
   const selectedConversationId =
-    searchParams?.conversationId ?? conversations[0]?.id ?? null;
+    conversations.some(
+      (conversation) => conversation.id === searchParams?.conversationId
+    )
+      ? searchParams?.conversationId ?? null
+      : conversations[0]?.id ?? null;
   if (selectedConversationId) {
     await markCustomerMessagesReadForStaff(selectedConversationId);
-    conversations = await listStaffConversations();
+    allConversations = await listStaffConversations();
+    tagsByCustomer = await listTagsForCustomers(
+      allConversations.map((conversation) => conversation.customer_id)
+    );
+    filterCounts = getConversationFilterCounts({
+      conversations: allConversations,
+      currentAgentId: session.id,
+      tagsByCustomer,
+      now: initialNow
+    });
+    conversations = filterConversations({
+      conversations: allConversations,
+      filter: activeFilter,
+      currentAgentId: session.id,
+      tagsByCustomer,
+      now: initialNow
+    });
   }
   const selectedConversation = selectedConversationId
     ? await getConversationSummary(selectedConversationId)
@@ -218,7 +263,6 @@ export default async function StaffConversationsPage({
       : [];
   const assignableAgents = await listAssignableAgents();
   const { supabaseUrl, anonKey } = getSupabasePublicConfig();
-  const initialNow = Date.now();
 
   return (
     <main className="staff-chat-shell">
@@ -230,6 +274,8 @@ export default async function StaffConversationsPage({
 
         <ConversationSidebarList
           conversations={conversations}
+          filterCounts={filterCounts}
+          activeFilter={activeFilter}
           selectedConversationId={selectedConversationId}
           initialNow={initialNow}
         />

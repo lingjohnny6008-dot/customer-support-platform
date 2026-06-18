@@ -2,22 +2,23 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import {
+  isCustomerOnline,
+  type ConversationFilterCount,
+  type ConversationFilterKey
+} from "@/lib/conversation-filters";
 import type { ConversationSummary } from "@/lib/types";
-
-const ONLINE_WINDOW_MS = 5 * 60 * 1000;
-
-function isCustomerOnline(lastSeenAt: string | null, now: number) {
-  return lastSeenAt
-    ? now - new Date(lastSeenAt).getTime() <= ONLINE_WINDOW_MS
-    : false;
-}
 
 export function ConversationSidebarList({
   conversations,
+  filterCounts,
+  activeFilter,
   selectedConversationId,
   initialNow
 }: {
   conversations: ConversationSummary[];
+  filterCounts: ConversationFilterCount[];
+  activeFilter: ConversationFilterKey;
   selectedConversationId: string | null;
   initialNow: number;
 }) {
@@ -41,6 +42,23 @@ export function ConversationSidebarList({
 
   return (
     <>
+      <nav className="conversation-filter-list" aria-label="Conversation filters">
+        {filterCounts.map((filter) => (
+          <Link
+            className={
+              filter.key === activeFilter
+                ? "conversation-filter-link active"
+                : "conversation-filter-link"
+            }
+            href={`/dashboard/conversations?filter=${filter.key}`}
+            key={filter.key}
+          >
+            <span>{filter.label}</span>
+            <strong>{filter.count}</strong>
+          </Link>
+        ))}
+      </nav>
+
       <label className="sidebar-search-field">
         <span>Search customers</span>
         <input
@@ -72,7 +90,7 @@ export function ConversationSidebarList({
                     ? "conversation-link active"
                     : "conversation-link"
                 }
-                href={`/dashboard/conversations?conversationId=${conversation.id}`}
+                href={`/dashboard/conversations?filter=${activeFilter}&conversationId=${conversation.id}`}
                 key={conversation.id}
               >
                 <strong>
